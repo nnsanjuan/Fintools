@@ -1,0 +1,937 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loan Payoff Calculator — See Your Debt-Free Date</title>
+<meta name="description" content="Free loan payoff calculator. Enter your loan details and instantly see your payoff date, total interest paid, and monthly payment breakdown.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0e0c;
+    --paper: #f5f2eb;
+    --cream: #ede9df;
+    --accent: #c84b2f;
+    --accent-light: #f0d5ce;
+    --gold: #b8933a;
+    --muted: #8a8070;
+    --border: #d4cfc4;
+    --success: #2a6b3c;
+    --success-light: #d4eadb;
+    --white: #ffffff;
+    --shadow: 0 2px 20px rgba(15,14,12,0.08);
+    --shadow-lg: 0 8px 40px rgba(15,14,12,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* NOISE TEXTURE OVERLAY */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.4;
+  }
+
+  .container {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* HEADER */
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 0;
+    background: var(--paper);
+  }
+
+  .header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.3rem;
+    color: var(--ink);
+    letter-spacing: -0.02em;
+  }
+
+  .logo span {
+    color: var(--accent);
+  }
+
+  .badge {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    background: var(--accent-light);
+    color: var(--accent);
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  /* HERO */
+  .hero {
+    padding: 64px 0 48px;
+    text-align: center;
+    position: relative;
+  }
+
+  .hero::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 1px;
+    height: 40px;
+    background: linear-gradient(to bottom, var(--border), transparent);
+  }
+
+  .hero-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 16px;
+    display: block;
+  }
+
+  .hero h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2.4rem, 5vw, 3.8rem);
+    line-height: 1.1;
+    letter-spacing: -0.03em;
+    color: var(--ink);
+    margin-bottom: 20px;
+  }
+
+  .hero h1 em {
+    font-style: italic;
+    color: var(--accent);
+  }
+
+  .hero p {
+    font-size: 1.05rem;
+    color: var(--muted);
+    font-weight: 300;
+    max-width: 480px;
+    margin: 0 auto;
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    padding: 48px 0 80px;
+    align-items: start;
+  }
+
+  @media (max-width: 700px) {
+    .main-grid { grid-template-columns: 1fr; }
+  }
+
+  /* CARD */
+  .card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 32px;
+    box-shadow: var(--shadow);
+  }
+
+  .card-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.15rem;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--ink);
+  }
+
+  .card-title .icon {
+    width: 28px;
+    height: 28px;
+    background: var(--accent-light);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+  }
+
+  /* FORM */
+  .field {
+    margin-bottom: 22px;
+  }
+
+  label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .input-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+
+  .input-prefix {
+    position: absolute;
+    left: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.9rem;
+    color: var(--muted);
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  input[type="number"], input[type="text"], select {
+    width: 100%;
+    padding: 12px 14px 12px 30px;
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    font-family: 'DM Mono', monospace;
+    font-size: 1rem;
+    color: var(--ink);
+    background: var(--paper);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input[type="number"]:focus, input[type="text"]:focus, select:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-light);
+    background: var(--white);
+  }
+
+  input.no-prefix {
+    padding-left: 14px;
+  }
+
+  .input-suffix {
+    position: absolute;
+    right: 14px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--muted);
+    pointer-events: none;
+  }
+
+  /* RANGE SLIDER */
+  .range-wrap {
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  input[type="range"] {
+    flex: 1;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+  }
+
+  input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(200,75,47,0.35);
+    transition: transform 0.15s;
+  }
+
+  input[type="range"]::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+  }
+
+  .range-val {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--accent);
+    font-weight: 500;
+    min-width: 48px;
+    text-align: right;
+  }
+
+  /* BUTTON */
+  .btn {
+    width: 100%;
+    padding: 15px;
+    background: var(--ink);
+    color: var(--paper);
+    border: none;
+    border-radius: 8px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: transform 0.15s, box-shadow 0.15s;
+    letter-spacing: 0.02em;
+    margin-top: 8px;
+  }
+
+  .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 20px rgba(15,14,12,0.25);
+  }
+
+  .btn:active { transform: translateY(0); }
+
+  /* RESULTS */
+  .results-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    display: flex;
+    flex-direction: column;
+  }
+
+  .results-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 24px 28px;
+  }
+
+  .results-header .label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .results-header .payoff-date {
+    font-family: 'DM Serif Display', serif;
+    font-size: 2rem;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+
+  .results-header .months-left {
+    font-size: 0.85rem;
+    color: var(--muted);
+    margin-top: 6px;
+    font-weight: 300;
+  }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1px;
+    background: var(--border);
+    flex: 1;
+  }
+
+  .stat {
+    background: var(--white);
+    padding: 20px 24px;
+  }
+
+  .stat .stat-label {
+    font-size: 0.72rem;
+    font-weight: 500;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  .stat .stat-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: var(--ink);
+    line-height: 1.2;
+  }
+
+  .stat .stat-value.accent { color: var(--accent); }
+  .stat .stat-value.success { color: var(--success); }
+
+  /* PROGRESS BAR */
+  .progress-section {
+    padding: 20px 24px;
+    border-top: 1px solid var(--border);
+    background: var(--white);
+  }
+
+  .progress-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+
+  .progress-bar {
+    height: 8px;
+    background: var(--cream);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+
+  .progress-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+    background: linear-gradient(90deg, var(--success), #4a9e6a);
+  }
+
+  .progress-fill.danger {
+    background: linear-gradient(90deg, var(--accent), #e07060);
+  }
+
+  /* AMORTIZATION TABLE */
+  .table-section {
+    padding: 40px 0 80px;
+  }
+
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 20px;
+  }
+
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.4rem;
+    color: var(--ink);
+  }
+
+  .section-sub {
+    font-size: 0.85rem;
+    color: var(--muted);
+  }
+
+  .table-wrap {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    background: var(--white);
+    box-shadow: var(--shadow);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  thead {
+    background: var(--cream);
+    border-bottom: 1px solid var(--border);
+  }
+
+  thead th {
+    padding: 12px 16px;
+    text-align: right;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  thead th:first-child { text-align: left; }
+
+  tbody tr {
+    border-bottom: 1px solid var(--cream);
+    transition: background 0.1s;
+  }
+
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--paper); }
+
+  tbody td {
+    padding: 11px 16px;
+    text-align: right;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--ink);
+  }
+
+  tbody td:first-child {
+    text-align: left;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.85rem;
+    color: var(--muted);
+    font-weight: 500;
+  }
+
+  td.interest-col { color: var(--accent); }
+  td.principal-col { color: var(--success); }
+
+  .show-more-wrap {
+    text-align: center;
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    background: var(--cream);
+  }
+
+  .show-more-btn {
+    font-size: 0.82rem;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+  }
+
+  /* PLACEHOLDER */
+  .placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 48px 32px;
+    text-align: center;
+    flex: 1;
+  }
+
+  .placeholder-icon {
+    font-size: 2.5rem;
+    margin-bottom: 16px;
+    opacity: 0.3;
+  }
+
+  .placeholder p {
+    font-size: 0.9rem;
+    color: var(--muted);
+    font-weight: 300;
+  }
+
+  /* FOOTER */
+  footer {
+    border-top: 1px solid var(--border);
+    padding: 32px 0;
+    text-align: center;
+  }
+
+  footer p {
+    font-size: 0.8rem;
+    color: var(--muted);
+    line-height: 1.8;
+  }
+
+  /* AD PLACEHOLDER */
+  .ad-slot {
+    background: var(--cream);
+    border: 1.5px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
+  .ad-top { height: 90px; margin-bottom: 32px; }
+  .ad-mid { height: 90px; margin: 32px 0; }
+
+  /* ANIMATIONS */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .animate-in {
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="header-inner">
+      <div class="logo">Fin<span>Tools</span></div>
+      <span class="badge">Free Calculator</span>
+    </div>
+  </div>
+</header>
+
+<!-- AD SLOT TOP -->
+<div class="container">
+  <div class="ad-slot ad-top" style="margin-top:24px;">
+    <!-- AdSense: 728x90 Leaderboard -->
+    Advertisement
+  </div>
+</div>
+
+<section class="hero">
+  <div class="container">
+    <span class="hero-label">Loan Payoff Calculator</span>
+    <h1>When will you be<br><em>debt-free?</em></h1>
+    <p>Enter your loan details below and instantly see your exact payoff date, total interest, and full amortization schedule.</p>
+  </div>
+</section>
+
+<div class="container">
+  <div class="main-grid">
+
+    <!-- INPUT CARD -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon">📋</div>
+        Loan Details
+      </div>
+
+      <div class="field">
+        <label>Loan Balance</label>
+        <div class="input-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" id="balance" placeholder="25,000" min="0" step="100">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Annual Interest Rate</label>
+        <div class="input-wrap">
+          <input type="number" id="rate" placeholder="6.5" min="0" max="50" step="0.1" class="no-prefix">
+          <span class="input-suffix">%</span>
+        </div>
+        <div class="range-wrap">
+          <input type="range" id="rateRange" min="0" max="30" step="0.1" value="6.5">
+          <span class="range-val" id="rateRangeVal">6.5%</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Monthly Payment</label>
+        <div class="input-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" id="payment" placeholder="500" min="0" step="10">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Extra Monthly Payment (optional)</label>
+        <div class="input-wrap">
+          <span class="input-prefix">$</span>
+          <input type="number" id="extra" placeholder="0" min="0" step="10">
+        </div>
+      </div>
+
+      <button class="btn" onclick="calculate()">Calculate Payoff →</button>
+    </div>
+
+    <!-- RESULTS CARD -->
+    <div class="results-card" id="resultsCard">
+      <div class="placeholder" id="placeholder">
+        <div class="placeholder-icon">🏦</div>
+        <p>Fill in your loan details<br>and hit Calculate.</p>
+      </div>
+
+      <div id="results" class="hidden">
+        <div class="results-header">
+          <div class="label">Debt-Free Date</div>
+          <div class="payoff-date" id="payoffDate">—</div>
+          <div class="months-left" id="monthsLeft"></div>
+        </div>
+
+        <div class="stats-grid">
+          <div class="stat">
+            <div class="stat-label">Monthly Payment</div>
+            <div class="stat-value" id="totalPayment">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Total Interest</div>
+            <div class="stat-value accent" id="totalInterest">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Total Paid</div>
+            <div class="stat-value" id="totalPaid">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Interest Share</div>
+            <div class="stat-value accent" id="interestPercent">—</div>
+          </div>
+        </div>
+
+        <div class="progress-section">
+          <div class="progress-label">
+            <span>Principal</span>
+            <span id="progressLabel">—</span>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" id="progressFill" style="width:0%"></div>
+          </div>
+        </div>
+
+        <div style="padding: 16px 24px; background: var(--success-light); border-top: 1px solid #c0ddc9;" id="savingsSection">
+          <div style="font-size:0.72rem;font-weight:600;letter-spacing:0.06em;text-transform:uppercase;color:var(--success);margin-bottom:4px;">💡 With Extra Payments</div>
+          <div style="font-size:0.85rem;color:var(--success);font-family:'DM Mono',monospace;" id="savingsText"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- AD MID -->
+  <div class="ad-slot ad-mid">
+    <!-- AdSense: 728x90 In-Article -->
+    Advertisement
+  </div>
+
+  <!-- AMORTIZATION TABLE -->
+  <div class="table-section" id="tableSection" style="display:none">
+    <div class="section-header">
+      <h2 class="section-title">Amortization Schedule</h2>
+      <span class="section-sub">Month-by-month breakdown</span>
+    </div>
+
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Payment</th>
+            <th>Principal</th>
+            <th>Interest</th>
+            <th>Balance</th>
+          </tr>
+        </thead>
+        <tbody id="amortTable"></tbody>
+      </table>
+      <div class="show-more-wrap" id="showMoreWrap" style="display:none">
+        <button class="show-more-btn" onclick="showAll()">Show all months ↓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="container">
+    <p>
+      FinTools Loan Payoff Calculator — Results are estimates for educational purposes only.<br>
+      Consult a financial advisor for personalized advice. © 2025 FinTools.
+    </p>
+  </div>
+</footer>
+
+<script>
+  let fullSchedule = [];
+
+  // Sync range slider with input
+  const rateInput = document.getElementById('rate');
+  const rateRange = document.getElementById('rateRange');
+  const rateRangeVal = document.getElementById('rateRangeVal');
+
+  rateRange.addEventListener('input', () => {
+    rateInput.value = rateRange.value;
+    rateRangeVal.textContent = rateRange.value + '%';
+  });
+
+  rateInput.addEventListener('input', () => {
+    rateRange.value = rateInput.value;
+    rateRangeVal.textContent = rateInput.value + '%';
+  });
+
+  // Auto-calculate on input change
+  ['balance','rate','payment','extra'].forEach(id => {
+    document.getElementById(id).addEventListener('input', () => {
+      const b = parseFloat(document.getElementById('balance').value);
+      const r = parseFloat(document.getElementById('rate').value);
+      const p = parseFloat(document.getElementById('payment').value);
+      if (b > 0 && r >= 0 && p > 0) calculate();
+    });
+  });
+
+  function fmt(n) {
+    return '$' + n.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function fmtShort(n) {
+    return '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  }
+
+  function buildSchedule(balance, monthlyRate, payment) {
+    const schedule = [];
+    let bal = balance;
+    let month = 0;
+    const now = new Date();
+
+    while (bal > 0.01 && month < 600) {
+      month++;
+      const interest = bal * monthlyRate;
+      let principal = Math.min(payment - interest, bal);
+      if (principal < 0) return null; // payment too low
+
+      const newBal = Math.max(bal - principal, 0);
+      const date = new Date(now.getFullYear(), now.getMonth() + month, 1);
+      schedule.push({
+        month,
+        date: date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }),
+        payment: interest + principal,
+        principal,
+        interest,
+        balance: newBal
+      });
+
+      bal = newBal;
+    }
+    return schedule;
+  }
+
+  function calculate() {
+    const balance = parseFloat(document.getElementById('balance').value);
+    const annualRate = parseFloat(document.getElementById('rate').value);
+    const basePayment = parseFloat(document.getElementById('payment').value);
+    const extra = parseFloat(document.getElementById('extra').value) || 0;
+
+    if (!balance || !annualRate || !basePayment) return;
+
+    const monthlyRate = annualRate / 100 / 12;
+    const totalPayment = basePayment + extra;
+
+    // Check payment covers at least interest
+    const firstInterest = balance * monthlyRate;
+    if (totalPayment <= firstInterest) {
+      alert(`Your payment of ${fmt(totalPayment)} is too low. Minimum to cover interest: ${fmt(firstInterest + 1)}`);
+      return;
+    }
+
+    // Build schedule
+    fullSchedule = buildSchedule(balance, monthlyRate, totalPayment);
+    if (!fullSchedule) return;
+
+    const lastEntry = fullSchedule[fullSchedule.length - 1];
+    const totalPaid = fullSchedule.reduce((s, r) => s + r.payment, 0);
+    const totalInterest = totalPaid - balance;
+    const interestPct = (totalInterest / totalPaid * 100).toFixed(1);
+    const principalPct = (100 - parseFloat(interestPct)).toFixed(1);
+    const months = fullSchedule.length;
+
+    // Payoff date
+    const now = new Date();
+    const payoffDate = new Date(now.getFullYear(), now.getMonth() + months, 1);
+    const payoffStr = payoffDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+    // Years and months
+    const yrs = Math.floor(months / 12);
+    const mos = months % 12;
+    const timeStr = [yrs > 0 ? `${yrs} year${yrs>1?'s':''}` : '', mos > 0 ? `${mos} month${mos>1?'s':''}` : ''].filter(Boolean).join(', ');
+
+    // Show results
+    document.getElementById('placeholder').classList.add('hidden');
+    const resultsEl = document.getElementById('results');
+    resultsEl.classList.remove('hidden');
+    resultsEl.classList.add('animate-in');
+
+    document.getElementById('payoffDate').textContent = payoffStr;
+    document.getElementById('monthsLeft').textContent = `${timeStr} from now · ${months} payments`;
+    document.getElementById('totalPayment').textContent = fmtShort(totalPayment);
+    document.getElementById('totalInterest').textContent = fmtShort(totalInterest);
+    document.getElementById('totalPaid').textContent = fmtShort(totalPaid);
+    document.getElementById('interestPercent').textContent = interestPct + '%';
+
+    // Progress bar
+    const pFill = document.getElementById('progressFill');
+    pFill.className = 'progress-fill' + (parseFloat(principalPct) < 50 ? ' danger' : '');
+    setTimeout(() => { pFill.style.width = principalPct + '%'; }, 50);
+    document.getElementById('progressLabel').textContent = principalPct + '% of total paid';
+
+    // Extra payments savings
+    const savingsSection = document.getElementById('savingsSection');
+    if (extra > 0) {
+      const baseSchedule = buildSchedule(balance, monthlyRate, basePayment);
+      if (baseSchedule) {
+        const basePaid = baseSchedule.reduce((s, r) => s + r.payment, 0);
+        const baseInterest = basePaid - balance;
+        const saved = baseInterest - totalInterest;
+        const monthsSaved = baseSchedule.length - months;
+        savingsSection.style.display = 'block';
+        document.getElementById('savingsText').textContent =
+          `Extra $${extra}/mo saves you ${fmtShort(saved)} in interest & ${monthsSaved} month${monthsSaved!==1?'s':''} of payments.`;
+      }
+    } else {
+      savingsSection.style.display = 'none';
+    }
+
+    // Build table (first 12 rows)
+    renderTable(12);
+    document.getElementById('tableSection').style.display = 'block';
+  }
+
+  function renderTable(limit) {
+    const tbody = document.getElementById('amortTable');
+    const data = limit ? fullSchedule.slice(0, limit) : fullSchedule;
+    tbody.innerHTML = data.map(row => `
+      <tr>
+        <td>${row.date}</td>
+        <td>${fmt(row.payment)}</td>
+        <td class="principal-col">${fmt(row.principal)}</td>
+        <td class="interest-col">${fmt(row.interest)}</td>
+        <td>${fmt(row.balance)}</td>
+      </tr>
+    `).join('');
+
+    const showMore = document.getElementById('showMoreWrap');
+    if (limit && fullSchedule.length > limit) {
+      showMore.style.display = 'block';
+      showMore.querySelector('button').textContent = `Show all ${fullSchedule.length} months ↓`;
+    } else {
+      showMore.style.display = 'none';
+    }
+  }
+
+  function showAll() {
+    renderTable(null);
+  }
+
+  // Prefill example values for demo
+  document.getElementById('balance').value = 25000;
+  document.getElementById('rate').value = 6.5;
+  rateRange.value = 6.5;
+  rateRangeVal.textContent = '6.5%';
+  document.getElementById('payment').value = 500;
+</script>
+
+</body>
+</html>
